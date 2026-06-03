@@ -8,7 +8,11 @@ const PORT = process.env.PORT || 3000;
 // Your Fast2SMS API Key - set this in Railway environment variables
 const FAST2SMS_KEY = process.env.FAST2SMS_KEY;
 
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // Health check - UptimeRobot will ping this
