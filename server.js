@@ -2,15 +2,27 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 
-app.use(cors());
+// 🟢 Enforce open CORS policies for village mobile data networks
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Accept']
+}));
 app.use(express.json());
 
 app.post('/api/sos', async (req, res) => {
     try {
-        const { numbers } = req.body; 
+        let { numbers } = req.body; 
 
-        if (!numbers || !Array.isArray(numbers) || numbers.length === 0) {
+        if (!numbers) {
             return res.status(400).json({ success: false, message: "No phone numbers provided." });
+        }
+
+        // 🟢 FIX: Converts data cleanly if the phone sends an array inside an array
+        if (Array.isArray(numbers) && Array.isArray(numbers[0])) {
+            numbers = numbers[0];
+        } else if (!Array.isArray(numbers)) {
+            numbers = [numbers];
         }
 
         const commaSeparatedNumbers = numbers.join(',');
