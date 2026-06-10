@@ -1,63 +1,135 @@
 const express = require('express');
 const cors = require('cors');
-const app = express();
+const https = require('https'); // Native Node fallback (No installation needed)
 
-// 🟢 Enforce open CORS policies for village mobile data networks
-app.use(cors({
-    origin: '*',
-    methods: ['GET', 'POST'],
-    allowedHeaders: ['Content-Type', 'Accept']
-}));
+const app = express();
+app.use(cors({ origin: '*' }));
 app.use(express.json());
 
-app.post('/api/sos', async (req, res) => {
-    try {
-        let { numbers } = req.body; 
+const FAST2SMS_API_KEY = 'const express = require('express');
+const cors = require('cors');
+const https = require('https'); // Native Node fallback (No installation needed)
 
-        if (!numbers) {
-            return res.status(400).json({ success: false, message: "No phone numbers provided." });
-        }
+const app = express();
+app.use(cors({ origin: '*' }));
+app.use(express.json());
 
-        // 🟢 FIX: Converts data cleanly if the phone sends an array inside an array
-        if (Array.isArray(numbers) && Array.isArray(numbers[0])) {
-            numbers = numbers[0];
-        } else if (!Array.isArray(numbers)) {
-            numbers = [numbers];
-        }
+const FAST2SMS_API_KEY = 'kGFr3U3CoYMNR6P3lXaiU4WAwWaiFCniUQpvUFmCKCDVRVdEVZEjzsqES8Df'; 
 
-        const commaSeparatedNumbers = numbers.join(',');
+app.post('/api/sos', (req, res) => {
+    const { numbers } = req.body;
 
-        const response = await fetch("https://www.fast2sms.com/dev/bulkV2", {
-            method: "POST",
-            headers: {
-                "authorization": process.env.FAST2SMS_KEY,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                "route": "q",
-                "message": "EMERGENCY: This is an SOS alert from Surakshit Awaaz. Please help immediately!",
-                "language": "english",
-                "flash": 0,
-                "numbers": commaSeparatedNumbers
-            })
-        });
-
-        const data = await response.json();
-
-        if (data.return === true) {
-            return res.status(200).json({ success: true, message: "SMS delivered successfully!" });
-        } else {
-            console.error("Fast2SMS API Error Response:", data.message);
-            return res.status(200).json({ success: true, message: "Demo Mode Active: SOS registered on server." });
-        }
-
-    } catch (error) {
-        console.error("Server handled request safely:", error.message);
-        return res.status(200).json({ success: true, message: "Demo Mode Backup Active." });
+    if (!numbers || !Array.isArray(numbers) || numbers.length === 0) {
+        return res.status(400).json({ success: false, error: 'No phone numbers provided.' });
     }
+
+    const cleanNumbers = numbers.map(num => num.trim().replace(/[^0-9]/g, '')).join(',');
+
+    // CRITICAL FAST2SMS CHANGE FOR HINDI: 
+    // 1. Change language to 'unicode'
+    // 2. Write your message cleanly in Hindi text
+    const smsPayload = JSON.stringify({
+        route: 'q',
+        message: '⚠️ आपातकालीन अलर्ट: आपकी संपर्क सदस्य मुसीबत में हैं और उन्होंने "सुरक्षित आवाज़" ऐप को सक्रिय किया है। कृपया तुरंत उनसे संपर्क करें।',
+        language: 'unicode', 
+        numbers: cleanNumbers
+    });
+
+    // Native HTTPS request configuration to prevent 'fetch is not a function' environment crashes
+    const options = {
+        hostname: 'www.fast2sms.com',
+        path: '/dev/bulkV2',
+        method: 'POST',
+        headers: {
+            'authorization': FAST2SMS_API_KEY,
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(smsPayload)
+        }
+    };
+
+    const request = https.request(options, (response) => {
+        let data = '';
+        response.on('data', (chunk) => { data += chunk; });
+        response.on('end', () => {
+            try {
+                const parsedData = JSON.parse(data);
+                if (parsedData.return === true) {
+                    res.status(200).json({ success: true });
+                } else {
+                    res.status(500).json({ success: false, error: parsedData.message });
+                }
+            } catch (e) {
+                res.status(500).json({ success: false, error: 'Data parse failure' });
+            }
+        });
+    });
+
+    request.on('error', (error) => {
+        res.status(500).json({ success: false, error: error.message });
+    });
+
+    request.write(smsPayload);
+    request.end();
 });
 
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 Surakshit Awaaz backend active on port ${PORT}`);
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`SOS Server processing on port ${PORT}`));'; 
+
+app.post('/api/sos', (req, res) => {
+    const { numbers } = req.body;
+
+    if (!numbers || !Array.isArray(numbers) || numbers.length === 0) {
+        return res.status(400).json({ success: false, error: 'No phone numbers provided.' });
+    }
+
+    const cleanNumbers = numbers.map(num => num.trim().replace(/[^0-9]/g, '')).join(',');
+
+    // CRITICAL FAST2SMS CHANGE FOR HINDI: 
+    // 1. Change language to 'unicode'
+    // 2. Write your message cleanly in Hindi text
+    const smsPayload = JSON.stringify({
+        route: 'q',
+        message: '⚠️ आपातकालीन अलर्ट: आपकी संपर्क सदस्य मुसीबत में हैं और उन्होंने "सुरक्षित आवाज़" ऐप को सक्रिय किया है। कृपया तुरंत उनसे संपर्क करें।',
+        language: 'unicode', 
+        numbers: cleanNumbers
+    });
+
+    // Native HTTPS request configuration to prevent 'fetch is not a function' environment crashes
+    const options = {
+        hostname: 'www.fast2sms.com',
+        path: '/dev/bulkV2',
+        method: 'POST',
+        headers: {
+            'authorization': FAST2SMS_API_KEY,
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(smsPayload)
+        }
+    };
+
+    const request = https.request(options, (response) => {
+        let data = '';
+        response.on('data', (chunk) => { data += chunk; });
+        response.on('end', () => {
+            try {
+                const parsedData = JSON.parse(data);
+                if (parsedData.return === true) {
+                    res.status(200).json({ success: true });
+                } else {
+                    res.status(500).json({ success: false, error: parsedData.message });
+                }
+            } catch (e) {
+                res.status(500).json({ success: false, error: 'Data parse failure' });
+            }
+        });
+    });
+
+    request.on('error', (error) => {
+        res.status(500).json({ success: false, error: error.message });
+    });
+
+    request.write(smsPayload);
+    request.end();
 });
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`SOS Server processing on port ${PORT}`));
