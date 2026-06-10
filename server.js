@@ -7,7 +7,7 @@ app.use(cors({ origin: '*' }));
 app.use(express.json());
 
 // ⚠️ PUT YOUR ACTUAL FAST2SMS KEY INSIDE THESE SINGLE QUOTES
-const FAST2SMS_API_KEY = 'YOUR_ACTUAL_FAST2SMS_KEY_HERE'; 
+const FAST2SMS_API_KEY = 'kGFr3U3CoYMNR6P3lXaiU4WAwWaiFCniUQpvUFmCKCDVRVdEVZEjzsqES8Df'; 
 
 // Health Check
 app.get('/', (req, res) => {
