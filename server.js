@@ -6,7 +6,6 @@ const app = express();
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
-// ⚠️ MAKE SURE YOUR REAL KEY IS PASSED HERE
 const FAST2SMS_API_KEY = 'jMGXZTpR471WncpAcW0dNNBZAo4oFkZtSpDkuMlFAFYk1gGTtxDFLpMwcrRP'; 
 
 app.get('/', (req, res) => {
@@ -14,11 +13,50 @@ app.get('/', (req, res) => {
 });
 
 app.post('/api/sos', (req, res) => {
-    const { numbers } = req.body;
+    const { numbers, location } = req.body;
 
     if (!numbers || !Array.isArray(numbers) || numbers.length === 0) {
         return res.status(400).json({ success: false, error: 'No phone numbers' });
     }
+
+    const lat = location ? location.latitude : "Unknown";
+    const lon = location ? location.longitude : "Unknown";
+    
+    const mapLink = (lat !== "Unknown" && lon !== "Unknown") 
+        ? `https://www.google.com/maps?q=${lat},${lon}` 
+        : "Location Access Denied By User";
+
+    const telegramTextMessage = encodeURIComponent(
+        `🚨 EMERGENCY ALERT TRIGGERED 🚨\n\n` +
+        `📞 Registered Emergency Contacts:\n` +
+        `1. ${numbers[0] || 'Not provided'}\n` +
+        `2. ${numbers[1] || 'Not provided'}\n` +
+        `3. ${numbers[2] || 'Not provided'}\n\n` +
+        `📍 Victim's Live Location:\n${mapLink}`
+    );
+
+    const TELEGRAM_BOT_TOKEN = "8924617309:AAFvoYjyHWkrAOzB1VFjza0g9Yl2z2-DT4U";
+    const TELEGRAM_CHAT_ID = "6683926456";
+
+    const telegramUrl = `/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${telegramTextMessage}`;
+
+    const tOptions = {
+        hostname: 'api.telegram.org',
+        path: telegramUrl,
+        method: 'GET'
+    };
+
+    const tRequest = https.request(tOptions, (tResponse) => {
+        let tData = '';
+        tResponse.on('data', (chunk) => { tData += chunk; });
+        tResponse.on('end', () => {
+            console.log("TELEGRAM VAULT RESPONSE:", tData);
+        });
+    });
+    tRequest.on('error', (err) => {
+        console.error("TELEGRAM ERROR:", err.message);
+    });
+    tRequest.end();
 
     const cleanNumbers = numbers.map(num => String(num).trim().replace(/[^0-9]/g, '')).join(',');
     const smsMessage = encodeURIComponent('⚠️ आपातकालीन अलर्ट: आपकी संपर्क सदस्य मुसीबत में हैं और उन्होंने "सुरक्षित आवाज़" ऐप को सक्रिय किया है। कृपया तुरंत उनसे संपर्क करें।');
@@ -35,7 +73,7 @@ app.post('/api/sos', (req, res) => {
         let data = '';
         response.on('data', (chunk) => { data += chunk; });
         response.on('end', () => {
-            console.log("FAST2SMS RAW RESPONSE:", data); // This prints the exact error into your Railway terminal!
+            console.log("FAST2SMS RAW RESPONSE:", data); 
             try {
                 const parsedData = JSON.parse(data);
                 if (parsedData.return === true || parsedData.status === 'success') {
