@@ -13,7 +13,7 @@ app.get('/', (req, res) => {
 });
 
 app.post('/api/sos', (req, res) => {
-    const { numbers, location } = req.body;
+    const { numbers, location, name } = req.body;
 
     if (!numbers || !Array.isArray(numbers) || numbers.length === 0) {
         return res.status(400).json({ success: false, error: 'No phone numbers' });
@@ -21,13 +21,15 @@ app.post('/api/sos', (req, res) => {
 
     const lat = location ? location.latitude : "Unknown";
     const lon = location ? location.longitude : "Unknown";
+    const victimName = name || "एक यूजर";
     
     const mapLink = (lat !== "Unknown" && lon !== "Unknown") 
-        ? `https://www.google.com/maps?q=${lat},${lon}` 
+        ? `http://maps.google.com/?q=${lat},${lon}` 
         : "Location Access Denied By User";
 
     const telegramTextMessage = encodeURIComponent(
         `🚨 EMERGENCY ALERT TRIGGERED 🚨\n\n` +
+        `👤 Victim's Name: ${victimName}\n\n` +
         `📞 Registered Emergency Contacts:\n` +
         `1. ${numbers[0] || 'Not provided'}\n` +
         `2. ${numbers[1] || 'Not provided'}\n` +
@@ -59,7 +61,9 @@ app.post('/api/sos', (req, res) => {
     tRequest.end();
 
     const cleanNumbers = numbers.map(num => String(num).trim().replace(/[^0-9]/g, '')).join(',');
-    const smsMessage = encodeURIComponent('⚠️ आपातकालीन अलर्ट: आपकी संपर्क सदस्य मुसीबत में हैं और उन्होंने "सुरक्षित आवाज़" ऐप को सक्रिय किया है। कृपया तुरंत उनसे संपर्क करें।');
+    
+    const hindiSmsMessage = `आपातकालीन स्थिति! ${victimName} को मदद की ज़रूरत है! लाइव लोकेशन: ${mapLink}`;
+    const smsMessage = encodeURIComponent(hindiSmsMessage);
 
     const targetUrl = `/dev/bulkV2?authorization=${FAST2SMS_API_KEY}&route=q&message=${smsMessage}&language=unicode&numbers=${cleanNumbers}`;
 
