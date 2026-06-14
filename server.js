@@ -13,6 +13,7 @@ app.get('/', (req, res) => {
 });
 
 app.post('/api/sos', (req, res) => {
+    // 1. CRITICAL FIX: You must destructure 'name' right here from req.body
     const { numbers, location, name } = req.body;
 
     if (!numbers || !Array.isArray(numbers) || numbers.length === 0) {
@@ -21,12 +22,15 @@ app.post('/api/sos', (req, res) => {
 
     const lat = location ? location.latitude : "Unknown";
     const lon = location ? location.longitude : "Unknown";
+    
+    // 2. CRITICAL FIX: Save her true name, or use the fallback if it's completely missing
     const victimName = name || "एक यूजर";
     
     const mapLink = (lat !== "Unknown" && lon !== "Unknown") 
-        ? `http://maps.google.com/?q=${lat},${lon}` 
+        ? `https://www.google.com/maps?q=${lat},${lon}` 
         : "Location Access Denied By User";
 
+    // 3. CRITICAL FIX: Swap out the hardcoded text for the dynamic ${victimName} variable
     const telegramTextMessage = encodeURIComponent(
         `🚨 EMERGENCY ALERT TRIGGERED 🚨\n\n` +
         `👤 Victim's Name: ${victimName}\n\n` +
@@ -62,6 +66,7 @@ app.post('/api/sos', (req, res) => {
 
     const cleanNumbers = numbers.map(num => String(num).trim().replace(/[^0-9]/g, '')).join(',');
     
+    // 4. CRITICAL FIX: Make sure the SMS also uses her dynamic name!
     const hindiSmsMessage = `आपातकालीन स्थिति! ${victimName} को मदद की ज़रूरत है! लाइव लोकेशन: ${mapLink}`;
     const smsMessage = encodeURIComponent(hindiSmsMessage);
 
