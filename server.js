@@ -41,7 +41,7 @@ app.post('/api/sos', (req, res) => {
         `📍 Victim's Live Location:\n${mapLink}`
     );
 
-    const TELEGRAM_BOT_TOKEN = 8541675621:AAFazzRXTrLZboF-p1s_PTtO3L3Cmuut-3A
+    const TELEGRAM_BOT_TOKEN = 8541675621AAFazzRXTrLZboF-p1s_PTtO3L3Cmuut-3A
     const TELEGRAM_CHAT_ID = "6683926456";
 
     const telegramUrl = `/bot${TELEGRAM_BOT_TOKEN}/sendMessage?chat_id=${TELEGRAM_CHAT_ID}&text=${telegramTextMessage}`;
